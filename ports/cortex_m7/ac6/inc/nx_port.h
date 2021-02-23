@@ -25,8 +25,8 @@
 /*                                                                        */ 
 /*  PORT SPECIFIC C INFORMATION                            RELEASE        */ 
 /*                                                                        */ 
-/*    nx_port.h                                          Cortex-M7/IAR    */ 
-/*                                                          6.1           */
+/*    nx_port.h                                         Cortex-M7/MDK     */ 
+/*                                                           6.1          */
 /*                                                                        */
 /*  AUTHOR                                                                */
 /*                                                                        */
@@ -42,7 +42,11 @@
 /*                                                                        */ 
 /*    DATE              NAME                      DESCRIPTION             */
 /*                                                                        */
-/*  09-30-2020     Yuxin Zhou               Initial Version 6.1           */
+/*  05-19-2020     Yuxin Zhou               Initial Version 6.0           */
+/*  09-30-2020     Yuxin Zhou               Modified comment(s),  and     */
+/*                                            corrected the code of       */
+/*                                            getting system state,       */
+/*                                            resulting in version 6.1    */
 /*                                                                        */
 /**************************************************************************/
 
@@ -95,23 +99,23 @@
 /* Define macros that swap the endian for little endian ports.  */
 
 #ifdef NX_LITTLE_ENDIAN
-#define NX_CHANGE_ULONG_ENDIAN(arg) arg = __REV(arg)
-#define NX_CHANGE_USHORT_ENDIAN(arg) arg = __REV16(arg)
+#define NX_CHANGE_ULONG_ENDIAN(arg)       (arg) = __builtin_bswap32(arg)
+#define NX_CHANGE_USHORT_ENDIAN(arg)      (arg) = __builtin_bswap16(arg)
 
 
 #ifndef htonl
-#define htonl(val)  __REV(val)
+#define htonl(val)  __builtin_bswap32(val)
 #endif /* htonl */
 #ifndef ntohl
-#define ntohl(val)  __REV(val)
+#define ntohl(val)  __builtin_bswap32(val)
 #endif /* htonl */
 
 #ifndef htons
-#define htons(val)  __REV16(val)
+#define htons(val)  __builtin_bswap16(val)
 #endif /*htons */
 
 #ifndef ntohs
-#define ntohs(val)  __REV16(val)
+#define ntohs(val)  __builtin_bswap16(val)
 #endif /*htons */
 
 
@@ -191,7 +195,7 @@
 
 #ifdef NX_SYSTEM_INIT
 CHAR                            _nx_version_id[] = 
-                                    "Copyright (c) Microsoft Corporation. All rights reserved.  *  NetX Duo Cortex-M7/IAR Version 6.1.10 *";
+                                    "Copyright (c) Microsoft Corporation. All rights reserved.  *  NetX Duo Cortex-M7/MDK Version 6.1.10 *";
 #else
 extern  CHAR                    _nx_version_id[];
 #endif
