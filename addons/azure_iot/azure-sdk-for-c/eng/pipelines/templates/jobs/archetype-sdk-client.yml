@@ -6,7 +6,7 @@
 # +----+------------------+---------+---------------+-----------+---------+------------+-------+---------+---------------+--------+
 # |  1 | Linux ARM        |    +    |               |           |    +    |     N/A    |       |   N/A   |               |        |
 # |  2 | Linux ARM        |         |               |           |         |     N/A    |       |   N/A   |               |        |
-# |  3 | Linux (x64)      |    +    |               |     +     |    +    |      +     |   +   |         |               |        |
+# |  3 | Linux (x64)      |    +    |               |     +     |    +    |      +     |   +   |    +    |               |        |
 # |  4 | Linux (x64)      |         |               |           |    +    |      +     |   +   |    +    |               |        |
 # |  5 | Windows x86      |    +    |               |     +     |         |      +     |       |         |               |        |
 # |  6 | MacOS (x64)      |    +    |               |     +     |    +    |      +     |       |    +    |               |        |
@@ -22,7 +22,7 @@
 # | 16 | MacOS (x64)      |         |       +       |           |    +    |      +     |       |         |               |        |
 # | 17 | Linux (x64) GCC5 |    +    |       +       |           |         |      +     |       |    +    |               |        |
 # | 18 | Linux (x64) GCC5 |         |       +       |           |         |      +     |       |         |               |        |
-# | 19 | Windows x64      |    +    |               |     +     |         |            |       |         |               |        |
+# | 19 | Windows x64      |    +    |               |     +     |         |            |       |    +    |               |        |
 # | 20 |         G     E     N     E     R     A     T     E           A     R     T     I     F     A     C     T     S          |
 # +----+------------------+---------+---------------+-----------+---------+------------+-------+---------+---------------+--------+
 #
@@ -62,15 +62,14 @@ jobs:
         PublishMapFiles: 'false'
         BuildType: Debug
 
-      Linux_Release_MapFiles_Logging_UnitTests_Mocks:
+      Linux_Release_MapFiles_Logging_UnitTests_Mocks_Samples:
         Pool: azsdk-pool-mms-ubuntu-1804-general
         OSVmImage: MMSUbuntu18.04
-        vcpkg.deps: 'cmocka'
+        vcpkg.deps: 'cmocka paho-mqtt'
         VCPKG_DEFAULT_TRIPLET: 'x64-linux'
-        build.args: '-DPRECONDITIONS=OFF -DUNIT_TESTING=ON -DUNIT_TESTING_MOCKS=ON'
-        AZ_SDK_C_NO_SAMPLES: 'true'
+        build.args: '-DPRECONDITIONS=OFF -DUNIT_TESTING=ON -DUNIT_TESTING_MOCKS=ON -DTRANSPORT_PAHO=ON'
         PublishMapFiles: 'true'
-        MapFileArtifactSuffix: 'lnx-x64-rel-noprc-log'
+        MapFileArtifactSuffix: 'lnx-x64-rel-noprc-log-samples'
         BuildType: Release
 
       Linux_Logging_UnitTests_Mocks_Samples:
@@ -101,8 +100,7 @@ jobs:
         vcpkg.deps: 'curl[ssl] paho-mqtt cmocka'
         VCPKG_DEFAULT_TRIPLET: 'x64-osx'
         build.args: '-DTRANSPORT_CURL=ON -DTRANSPORT_PAHO=ON -DAZ_PLATFORM_IMPL=POSIX -DPRECONDITIONS=OFF -DUNIT_TESTING=ON'
-        PublishMapFiles: 'true'
-        MapFileArtifactSuffix: 'mac-rel-noprc-log'
+        MapFileArtifactSuffix: 'mac-rel-noprc-log-samples'
         BuildType: Release
 
       MacOS_Logging_UnitTests_Samples:
@@ -230,17 +228,16 @@ jobs:
         CC: '/usr/bin/gcc-5'
         BuildType: Debug
 
-      Windows_Release_MapFiles:
+      Windows_Release_Samples_MapFiles:
         Pool: azsdk-pool-mms-win-2019-general
         OSVmImage: MMS2019
-        vcpkg.deps: ''
+        vcpkg.deps: 'paho-mqtt'
         VCPKG_DEFAULT_TRIPLET: 'x64-windows-static'
-        build.args: '-DPRECONDITIONS=OFF -DLOGGING=OFF'
+        build.args: '-DPRECONDITIONS=OFF -DLOGGING=OFF -DTRANSPORT_PAHO=ON'
         CMAKE_GENERATOR: 'Visual Studio 16 2019'
         CMAKE_GENERATOR_PLATFORM: x64
-        AZ_SDK_C_NO_SAMPLES: 'true'
         PublishMapFiles: 'true'
-        MapFileArtifactSuffix: 'win-x64-rel-noprc-nolog'
+        MapFileArtifactSuffix: 'win-x64-rel-noprc-nolog-samples'
         BuildType: Release
   pool:
     name: $(Pool)
@@ -253,9 +250,34 @@ jobs:
   - checkout: self
     submodules: recursive
 
-  - template: /eng/common/pipelines/templates/steps/verify-agent-os.yml
-    parameters:
-      AgentImage: $(OSVmImage)
+  # Temporarily disable this step as it breaks DNS resolution in Ubuntu 16.04
+  # for cache task
+  # - template: /eng/common/pipelines/templates/steps/verify-agent-os.yml
+  #   parameters:
+  #     AgentImage: $(OSVmImage)
+
+  # Expand the OS verification and DNS bypass steps
+  - task: PowerShell@2
+    displayName: Verify agent OS
+    inputs:
+      pwsh: true
+      workingDirectory: $(System.DefaultWorkingDirectory)
+      filePath: eng/common/scripts/Verify-AgentOS.ps1
+      arguments: >
+        -AgentImage "$(OSVmImage)"
+
+  # https://github.com/actions/virtual-environments/issues/798
+  - script: sudo ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+    displayName: Bypass local DNS server to workaround issue resolving cognitiveservices names
+    # Condition altered to skip bypassing local DNS for Ubuntu 16.04 where
+    # bypassing causes failures in DevOps.
+    condition: |
+      and(
+        succeededOrFailed(),
+        contains(variables['OSVmImage'], 'ubuntu'),
+        not(contains(variables['OSVmImage'], '16.04')),
+        eq(variables['Container'], '')
+        )
 
   # Install apt dependencies (if appropriate)
   - bash: sudo apt install -y $(AptDependencies)
@@ -368,6 +390,7 @@ jobs:
   # Validate all the files are formatted correctly according to the .clang-format file.
   - bash: |
       # Run clang-format recursively on each source and header file within the repo.
+      clang-format --version
       find . \( -iname '*.h' -o -iname '*.c' \) -exec clang-format -i {} \;
 
       git status --untracked-files=no --porcelain
@@ -390,6 +413,8 @@ jobs:
     name: azsdk-pool-mms-win-2019-general
     vmImage: MMS2019
   steps:
+    - template: /eng/common/pipelines/templates/steps/check-spelling.yml
+
     - template: /eng/common/pipelines/templates/steps/verify-links.yml
       parameters:
         Directory: ''
