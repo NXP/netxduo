@@ -18,16 +18,16 @@ Azure IoT Middleware for Azure RTOS stays as an addon for the Azure RTOS NetXDuo
 
 ### Build
 
-The Azure IoT Middleware for Azure RTOS is built as part of the NetXDuo. Make sure you have defined the following *marcos* when building it:
+The Azure IoT Middleware for Azure RTOS is built as part of the NetXDuo. Make sure you have defined the following *macros* when building it:
 
-Module | Marcos |
+Module | Macros |
 | --- | --- |
 | Azure IoT Middleware for Azure RTOS | `NX_ENABLE_EXTENDED_NOTIFY_SUPPORT`<br> `NX_SECURE_ENABLE`<br> `NXD_MQTT_CLOUD_ENABLE`
 | Azure Defender for IoT security module | `NX_ENABLE_IP_PACKET_FILTER`
 
 **NOTE:** Azure Defender for IoT security module is enabled by default. You can define `NX_AZURE_DISABLE_IOT_SECURITY_MODULE` to disable it. [Learn more](#azure-defender-for-iot-security-module).
 
-Follow [this example](/ports/cortex_m7/iar/inc/nx_port.h) to see how to define these *marcos* in the header file.
+Follow [this example](/ports/cortex_m7/iar/inc/nx_port.h) to see how to define these *macros* in the header file.
 
 ### Samples
 
@@ -58,6 +58,16 @@ Enhanced features provided in middleware:
 * Authentication: X.509 client certificate.
 * Device Provisioning Service.
 * JSON parser.
+
+## Device Update for IoT Hub module
+
+The [Device Update for IoT Hub](https://docs.microsoft.com/azure/iot-hub-device-update/understand-device-update) (public preview) is a service that enables you to deploy over-the-air updates (OTA) for your IoT devices. The Device Update for IoT Hub module is the implementation of [Device Update for IoT Hub Agent](./azure_rtos_iot_adu_agent.md) in Azure RTOS NetX Duo. It provides simple APIs for device builders to integrate the Device Update capability in their application.
+
+See the [samples](https://github.com/azure-rtos/samples/tree/PublicPreview/ADU) of key semiconductors evaluation boards that include the get started guides to learn configure, build and deploy the over-the-air (OTA) updates to the devices.
+
+And you can learn more details about the [Device Update for IoT Hub service](https://docs.microsoft.com/azure/iot-hub-device-update/understand-device-update).
+
+For a tutorial on how to get your Azure RTOS ADU sample up and running, [please see the link here](https://docs.microsoft.com/azure/iot-hub-device-update/device-update-azure-real-time-operating-system).
 
 ## Azure Defender for IoT
 
@@ -92,7 +102,7 @@ The extra resource it will take on device and connection:
 Toolchain | RAM | ROM |
 | --- | --- | --- |
 | IAR Embedded Workbench (iccarm) | 4Kb | 10Kb
-| GUN ARM Embedded Toolchain (arm-gcc) | 4Kb | 13Kb
+| GNU ARM Embedded Toolchain (arm-gcc) | 4Kb | 13Kb
 
 **Additional Connection**:
 Connection Type | RAM | Network |
@@ -112,6 +122,7 @@ Learn [here](https://docs.microsoft.com/en-us/azure/defender-for-iot) for more i
 * [nx_azure_iot_hub_client_properties](./azure_rtos_iot_hub_client_properties.md)
 * [nx_azure_iot_provisioning_client](./azure_rtos_iot_provisioning_client.md)
 * [nx_azure_iot_json](./azure_rtos_iot_json.md)
+* [nx_azure_iot_adu_agent](./azure_rtos_iot_adu_agent.md)
 * [nx_azure_iot_security_module](../azure_iot_security_module/docs/nx_azure_iot_security_module.md)
 
 ## Need Help?
