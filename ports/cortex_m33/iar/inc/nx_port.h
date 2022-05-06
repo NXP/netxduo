@@ -66,6 +66,16 @@
 #define NX_LITTLE_ENDIAN    1
 
 
+/* By default IPv6 is enabled. */
+
+#ifndef FEATURE_NX_IPV6
+#define FEATURE_NX_IPV6
+#endif /* FEATURE_NX_IPV6 */
+
+#ifdef NX_DISABLE_IPV6
+#undef FEATURE_NX_IPV6
+#endif /* !NX_DISABLE_IPV6 */
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
